@@ -1,0 +1,35 @@
+name: scys-daily
+on:
+  schedule:
+    - cron: "0 1 * * *"   # UTC 01:00 = 北京时间 09:00（GitHub 定时可能有 5~30 分钟延迟）
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: scys-daily
+
+jobs:
+  board:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate daily board
+        env:
+          STATE_KEY: ${{ secrets.STATE_KEY }}
+          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
+        run: python3 daily.py
+
+      - name: Commit rotated state
+        run: |
+          git config user.name "scys-daily-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add state/
+          if git diff --cached --quiet; then
+            echo "no state change"
+          else
+            git commit -m "state: $(date -u +'%F') token rotated / history updated"
+            git push
+          fi
