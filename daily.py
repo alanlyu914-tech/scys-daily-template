@@ -167,6 +167,13 @@ def intro_of(t):
         return s[:40] + ("…" if len(s) > 40 else "")
     return (t.get("showTitle") or "")[:40]
 
+def fmt_post_date(ms):
+    """生财站内发帖时间（gmtCreate 毫秒）→ YYYY-MM-DD"""
+    try:
+        return datetime.datetime.fromtimestamp(int(ms) / 1000).strftime("%Y-%m-%d")
+    except Exception:
+        return "未知时间"
+
 def pick(pool, history):
     cands = []
     for tid, t in pool.items():
@@ -220,9 +227,10 @@ def compose(sel):
     lines = []
     def item(no, t, tag=""):
         title = t.get("showTitle") or ""
-        line = "**%d. %s**\n%s（%s赞%s评%s）\n[原文链接](https://scys.com/topic/detail?id=%s)" % (
+        line = "**%d. %s**\n%s（%s赞%s评%s读 · 发帖 %s）\n[原文链接](https://scys.com/topic/detail?id=%s)" % (
             no, title, intro_of(t), t.get("likeCount") or 0, t.get("commentsCount") or 0,
-            t.get("readingCount") or 0, t.get("topicId") or t.get("entityId"))
+            t.get("readingCount") or 0, fmt_post_date(t.get("gmtCreate")),
+            t.get("topicId") or t.get("entityId"))
         return line
     parts = []
     if sel:
