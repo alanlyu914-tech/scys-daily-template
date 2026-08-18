@@ -1,7 +1,8 @@
 name: scys-daily
 on:
   schedule:
-    - cron: "0 1 * * *"   # UTC 01:00 = 北京时间 09:00（GitHub 定时可能有 5~30 分钟延迟）
+    - cron: "13 23 * * *"  # UTC 23:13 = 北京时间 07:13。实测 GitHub 定时延迟可达 90 分钟（整点/半点时段最堵），
+                           # 提前到 07:13 + 错峰分钟数，即使延迟 100 分钟也能在 9 点前送达
   workflow_dispatch: {}
 
 permissions:

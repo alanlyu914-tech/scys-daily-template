@@ -143,12 +143,30 @@ def is_monetize(title):
 def is_efficiency(title):
     return bool(re.search(r"提效|效率|自动化|工作流|降本|生产力|搭建", title or ""))
 
-def recency_bonus(ms):
+def parse_post_time(v):
+    """gmtCreate 兼容秒/毫秒 → datetime；缺失或超范围（<2015 或 >明年）返回 None。
+    生财接口实测为秒级时间戳，历史版本误按毫秒处理导致显示 1970-01-2x。"""
     try:
-        dt = datetime.datetime.fromtimestamp(int(ms) / 1000).date()
-        d = (datetime.date.today() - dt).days
-    except Exception:
+        ts = int(v)
+    except (TypeError, ValueError):
+        return None
+    if ts <= 0:
+        return None
+    if ts < 10**12:  # 秒级（~1.7e9）→ 毫秒
+        ts *= 1000
+    try:
+        dt = datetime.datetime.fromtimestamp(ts / 1000)
+    except (OverflowError, OSError, ValueError):
+        return None
+    if dt.year < 2015 or dt.year > datetime.date.today().year + 1:
+        return None
+    return dt
+
+def recency_bonus(v):
+    dt = parse_post_time(v)
+    if not dt:
         return 0
+    d = (datetime.date.today() - dt.date()).days
     return 120 if d <= 30 else (50 if d <= 60 else (15 if d <= 90 else 0))
 
 def score(t):
@@ -167,12 +185,10 @@ def intro_of(t):
         return s[:40] + ("…" if len(s) > 40 else "")
     return (t.get("showTitle") or "")[:40]
 
-def fmt_post_date(ms):
-    """生财站内发帖时间（gmtCreate 毫秒）→ YYYY-MM-DD"""
-    try:
-        return datetime.datetime.fromtimestamp(int(ms) / 1000).strftime("%Y-%m-%d")
-    except Exception:
-        return "未知时间"
+def fmt_post_date(v):
+    """生财站内发帖时间 → YYYY-MM-DD，解析失败显示「时间未知」"""
+    dt = parse_post_time(v)
+    return dt.strftime("%Y-%m-%d") if dt else "时间未知"
 
 def pick(pool, history):
     cands = []
