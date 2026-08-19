@@ -10,7 +10,8 @@ STATE_HISTORY = "state/history.json"
 KEY = os.environ.get("STATE_KEY", "")
 WEBHOOK = os.environ.get("FEISHU_WEBHOOK", "")
 LOCAL_SYNC_FILE = os.path.expanduser("~/.scys-mcp-auth.json")
-TODAY = datetime.date.today().isoformat()
+BJT = datetime.timezone(datetime.timedelta(hours=8))  # 北京时间（GitHub Actions 运行器为 UTC，直接 today() 会差一天）
+TODAY = datetime.datetime.now(BJT).date().isoformat()
 DEDUP_DAYS = 14
 
 def die(msg, code=1):
@@ -49,7 +50,7 @@ def load_history():
     return {}
 
 def save_history(h):
-    cutoff = (datetime.date.today() - datetime.timedelta(days=DEDUP_DAYS)).isoformat()
+    cutoff = (datetime.datetime.now(BJT).date() - datetime.timedelta(days=DEDUP_DAYS)).isoformat()
     h = {k: v for k, v in h.items() if v >= cutoff}
     json.dump(h, open(STATE_HISTORY, "w"), ensure_ascii=False, indent=1)
 
@@ -155,10 +156,10 @@ def parse_post_time(v):
     if ts < 10**12:  # 秒级（~1.7e9）→ 毫秒
         ts *= 1000
     try:
-        dt = datetime.datetime.fromtimestamp(ts / 1000)
+        dt = datetime.datetime.fromtimestamp(ts / 1000, BJT)
     except (OverflowError, OSError, ValueError):
         return None
-    if dt.year < 2015 or dt.year > datetime.date.today().year + 1:
+    if dt.year < 2015 or dt.year > datetime.datetime.now(BJT).year + 1:
         return None
     return dt
 
@@ -166,7 +167,7 @@ def recency_bonus(v):
     dt = parse_post_time(v)
     if not dt:
         return 0
-    d = (datetime.date.today() - dt.date()).days
+    d = (datetime.datetime.now(BJT).date() - dt.date()).days
     return 120 if d <= 30 else (50 if d <= 60 else (15 if d <= 90 else 0))
 
 def score(t):
