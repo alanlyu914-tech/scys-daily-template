@@ -13,6 +13,8 @@ LOCAL_SYNC_FILE = os.path.expanduser("~/.scys-mcp-auth.json")
 BJT = datetime.timezone(datetime.timedelta(hours=8))  # 北京时间（GitHub Actions 运行器为 UTC，直接 today() 会差一天）
 TODAY = datetime.datetime.now(BJT).date().isoformat()
 DEDUP_DAYS = 14
+ZSXQ_GROUP = "1824528822"  # 生财有术·知识星球网页版 group id
+TOPIC_URL = "https://wx.zsxq.com/group/%s/topic/%%s" % ZSXQ_GROUP  # 帖子网页版链接（scys.com 的 detail 路由无内容）
 
 def die(msg, code=1):
     print("FATAL:", msg)
@@ -244,10 +246,10 @@ def compose(sel):
     lines = []
     def item(no, t, tag=""):
         title = t.get("showTitle") or ""
-        line = "**%d. %s**\n%s（%s赞%s评%s读 · 发帖 %s）\n[原文链接](https://scys.com/topic/detail?id=%s)" % (
+        line = "**%d. %s**\n%s（%s赞%s评%s读 · 发帖 %s）\n[原文链接](%s)" % (
             no, title, intro_of(t), t.get("likeCount") or 0, t.get("commentsCount") or 0,
             t.get("readingCount") or 0, fmt_post_date(t.get("gmtCreate")),
-            t.get("topicId") or t.get("entityId"))
+            TOPIC_URL % (t.get("topicId") or t.get("entityId")))
         return line
     parts = []
     if sel:
